@@ -9,12 +9,18 @@ class Point:
     def distance(self, other_x, other_y):
         return np.sqrt((other_x - self.x) ** 2 + (other_y - self.y) ** 2)
 
+    def __str__(self):
+        return f'P(x={self.x}, y={self.y})'
+
 
 class Charge(Point):
-    def __init__(self, x, y, charge):
+    def __init__(self, x, y, q):
         super().__init__(x, y)
-        self.charge = charge
+        self.q = q
 
     def get_color(self):
-        return 'bo' if self.charge < 0 else 'ro'
+        return 'b' if self.q < 0 else 'r'
+
+    def __str__(self):
+        return f'Charge(x={self.x}, y={self.y}, q={self.q})'
 

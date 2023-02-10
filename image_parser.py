@@ -8,7 +8,7 @@ def get_inside(image: np.ndarray):
     inside = []
     for i, row in enumerate(image):
         for j, cell in enumerate(row):
-            if image[i][j]:
+            if not image[i][j]:
                 inside.append(Point(j, i))
     return inside
 

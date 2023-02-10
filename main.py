@@ -11,6 +11,7 @@ import customtkinter as ctk
 from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from threading import Thread
+from tkinter import messagebox
 
 
 class App(ctk.CTk):
@@ -57,8 +58,10 @@ class App(ctk.CTk):
         # canvas
         self.canvas = tk.Canvas(master=self)
         self.figure = None
-        self.charges_pos = 0
-        self.charges_neg = 0
+        self.num_of_pos = 50
+        self.num_of_neg = 50
+        self.positive = []
+        self.negative = []
         self.inside = []
         self.image_array = None
         self.ax = None
@@ -91,14 +94,8 @@ class App(ctk.CTk):
         upload.place(relx=0.9, rely=0.5, anchor=tk.CENTER)
         self.buttons['upload'] = upload
 
-        # place charges
-        place = ctk.CTkButton(master=self.frames['buttons'], text='Place charges', font=self.font_input,
-                              command=self.place_charges)
-        place.place(relx=0.7, rely=0.5, anchor=tk.CENTER)
-        self.buttons['place'] = place
-
         # number label
-        number_label = ctk.CTkLabel(master=self.frames['buttons'], text='# of charges', font=self.font_input)
+        number_label = ctk.CTkLabel(master=self.frames['buttons'], text='Positive', font=self.font_input)
         number_label.place(relx=0.3, rely=0.2, anchor=tk.CENTER)
 
         # number of charges
@@ -111,19 +108,32 @@ class App(ctk.CTk):
         num_display.place(relx=0.3, rely=0.83, anchor=tk.CENTER)
         self.buttons['num_display'] = num_display
 
+        # number neg label
+        num_label = ctk.CTkLabel(master=self.frames['buttons'], text='Negative', font=self.font_input)
+        num_label.place(relx=0.5, rely=0.2, anchor=tk.CENTER)
+
+        # number of charges neg
+        num_of_neg = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=100, command=self.slider_neg)
+        num_of_neg.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.buttons['num_of_neg'] = num_of_neg
+
+        # number display neg
+        num_display = ctk.CTkLabel(master=self.frames['buttons'], text=str(50), font=self.font_little)
+        num_display.place(relx=0.5, rely=0.83, anchor=tk.CENTER)
+        self.buttons['neg_display'] = num_display
+
         # speed label
         speed_label = ctk.CTkLabel(master=self.frames['buttons'], text='FPS', font=self.font_input)
-        speed_label.place(relx=0.5, rely=0.2, anchor=tk.CENTER)
+        speed_label.place(relx=0.7, rely=0.2, anchor=tk.CENTER)
 
         # speed
         speed = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=12, command=self.slider_speed)
-        speed.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        speed.place(relx=0.7, rely=0.5, anchor=tk.CENTER)
         self.buttons['speed'] = speed
 
         # speed display
-        # number display
         speed_display = ctk.CTkLabel(master=self.frames['buttons'], text='6.00', font=self.font_little)
-        speed_display.place(relx=0.5, rely=0.83, anchor=tk.CENTER)
+        speed_display.place(relx=0.7, rely=0.83, anchor=tk.CENTER)
         self.buttons['speed_display'] = speed_display
 
     def play_action(self):
@@ -133,6 +143,8 @@ class App(ctk.CTk):
         play.start()
 
     def upload_action(self):
+        self.looping = False
+        time.sleep(1 / self.FPS)
         print("Uploading...")
         filetypes = (
             ('Bitmaps', '*.bmp'),
@@ -143,21 +155,21 @@ class App(ctk.CTk):
         self.image = Image.open(image_path)
         self.image_array = np.asarray(self.image)
         self.inside = get_inside(self.image_array)
-        self.create_image()
+        self.update_image()
 
     def slider_speed(self, value):
         self.FPS = value
         self.buttons['speed_display'].configure(text=str(round(value, 2)))
 
     def slider_pos(self, value):
-        self.charges_pos = value
+        self.num_of_pos = int(value)
         self.buttons['num_display'].configure(text=str(int(value)))
 
-    def place_charges(self):
-        self.buttons['place'].configure(state='DISABLED')
-        pass
+    def slider_neg(self, value):
+        self.num_of_neg = int(value)
+        self.buttons['neg_display'].configure(text=str(int(value)))
 
-    def create_image(self):
+    def update_image(self):
         self.figure = plt.Figure(figsize=(self.width // 10, self.height // 10))
         self.ax = self.figure.add_subplot(111)
         chart_type = FigureCanvasTkAgg(self.figure, self.frames['canvas'])
@@ -166,7 +178,7 @@ class App(ctk.CTk):
         self.scatter_charges()
 
     def draw(self):
-        self.create_image()
+        self.update_image()
         print('drew frame')
 
     def loop(self):
@@ -175,10 +187,22 @@ class App(ctk.CTk):
             time.sleep(1 / self.FPS)
 
     def scatter_charges(self):
-        for i in range(self.charges_pos):
-            rand_point: Point = random.choice(self.inside)
+        # positive
+        for i in range(self.num_of_pos):
+            point: Point = random.choice(self.inside)
+            self.inside.remove(point)
+            charge = Charge(point.x, point.y, 1)
+            self.positive.append(charge)
+            self.ax.scatter(charge.x, charge.y, c=charge.get_color())
 
-            self.ax.scatter(rand_point.x, rand_point.y, c='r')
+        # negative
+        for i in range(self.num_of_neg):
+            point: Point = random.choice(self.inside)
+            self.inside.remove(point)
+            charge = Charge(point.x, point.y, -1)
+            self.negative.append(charge)
+            self.ax.scatter(charge.x, charge.y, c=charge.get_color())
+        print(f'Positives: {self.positive}', '\n', f'Negatives: {self.negative}')
 
 
 def main():
