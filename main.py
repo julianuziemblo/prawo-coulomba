@@ -62,6 +62,8 @@ class App(ctk.CTk):
         self.num_of_neg = 50
         self.positive = []
         self.negative = []
+        self.charges = []
+        self.charge = 1.
         self.inside = []
         self.image_array = None
         self.ax = None
@@ -191,7 +193,7 @@ class App(ctk.CTk):
         for i in range(self.num_of_pos):
             point: Point = random.choice(self.inside)
             self.inside.remove(point)
-            charge = Charge(point.x, point.y, 1)
+            charge = Charge(point.x, point.y, self.charge)
             self.positive.append(charge)
             self.ax.scatter(charge.x, charge.y, c=charge.get_color())
 
@@ -199,17 +201,19 @@ class App(ctk.CTk):
         for i in range(self.num_of_neg):
             point: Point = random.choice(self.inside)
             self.inside.remove(point)
-            charge = Charge(point.x, point.y, -1)
+            charge = Charge(point.x, point.y, -self.charge)
             self.negative.append(charge)
             self.ax.scatter(charge.x, charge.y, c=charge.get_color())
-        print(f'Positives: {self.positive}', '\n', f'Negatives: {self.negative}')
+
+        # all charges
+        self.charges = self.positive.extend(self.negative)
+        # print(f'Positives: {self.positive}', '\n', f'Negatives: {self.negative}')
 
 
 def main():
-    image_path = r'C:\Users\Julian\Desktop\bitmapa.bmp'
     WIDTH = 1200
     HEIGHT = 800
-    app = App(WIDTH, HEIGHT)
+    App(WIDTH, HEIGHT)
 
 
 if __name__ == '__main__':
