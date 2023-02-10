@@ -11,7 +11,9 @@ import customtkinter as ctk
 from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from threading import Thread
+import calculations as calc
 from tkinter import messagebox
+from image_parser import prevent_leak
 
 
 class App(ctk.CTk):
@@ -28,6 +30,8 @@ class App(ctk.CTk):
         self.geometry(f'{self.width}x{self.height}+{x}+{y}')
         self.minsize(width, height)
         self.title('Symulacja rozkładu ładunków w przedowniku')
+        self.canvas = None
+        self.ax = None
 
         # fonts
         self.font_header = ctk.CTkFont("Impact", self.width // 10, "bold")
@@ -44,20 +48,18 @@ class App(ctk.CTk):
         # flags
         self.looping = False
 
+        # threads
+        self.threads = {}
+
         # frames
         self.frames = {}
         self.create_frames()
-
-        # threads
-        self.threads = {}
 
         # buttons
         self.buttons = {}
         self.create_buttons()
 
         # canvas
-        self.canvas = tk.Canvas(master=self)
-        self.figure = None
         self.num_of_pos = 50
         self.num_of_neg = 50
         self.positive = []
@@ -65,8 +67,6 @@ class App(ctk.CTk):
         self.charges = []
         self.charge = 1.
         self.inside = []
-        self.image_array = None
-        self.ax = None
 
         # drawing
         self.FPS = 5
@@ -138,11 +138,17 @@ class App(ctk.CTk):
         speed_display.place(relx=0.7, rely=0.83, anchor=tk.CENTER)
         self.buttons['speed_display'] = speed_display
 
+        self.createWidgets()
+
     def play_action(self):
-        print("iiiiiiin motioooooon")
-        play = Thread(target=self.loop)
-        self.looping = True
-        play.start()
+        if not self.image:
+            messagebox.showerror('Error', 'Cannot play the simulation until an image is uploaded!')
+        else:
+            print("iiiiiiin motioooooon")
+            play = Thread(target=self.loop)
+            self.looping = True
+            play.start()
+            self.buttons['play'].configure(text='Restart')
 
     def upload_action(self):
         self.looping = False
@@ -157,6 +163,7 @@ class App(ctk.CTk):
         self.image = Image.open(image_path)
         self.image_array = np.asarray(self.image)
         self.inside = get_inside(self.image_array)
+        print("INSIDE:", self.inside)
         self.update_image()
 
     def slider_speed(self, value):
@@ -172,14 +179,41 @@ class App(ctk.CTk):
         self.buttons['neg_display'].configure(text=str(int(value)))
 
     def update_image(self):
-        self.figure = plt.Figure(figsize=(self.width // 10, self.height // 10))
-        self.ax = self.figure.add_subplot(111)
-        chart_type = FigureCanvasTkAgg(self.figure, self.frames['canvas'])
-        chart_type.get_tk_widget().pack()
+        # self.figure = plt.Figure(figsize=(self.width // 10, self.height // 10))
+        # self.ax = self.figure.add_subplot(111)
+        # chart_type = FigureCanvasTkAgg(self.figure, self.frames['canvas'])
+        # chart_type.get_tk_widget().pack()
+        print(self.charges)
+        if not self.charges:
+            self.ax.imshow(self.image)
+            self.scatter_charges()
+            print("setting up")
+        else:
+            self.ax.imshow(self.image)
+            self.scatter_update()
+            print("updating")
+
+    def createWidgets(self):
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.frames['canvas'])
+        self.canvas.get_tk_widget().pack()
+        self.canvas.draw()
+        print("canvas = ", self.canvas)
+
+    def scatter_update(self):
+        self.ax.clear()
+        # print(self.canvas)
+        for particle in self.charges:
+            self.ax.scatter(particle.x, particle.y, marker='o',
+                            c=particle.get_color())
         self.ax.imshow(self.image)
-        self.scatter_charges()
+        self.canvas.draw()
 
     def draw(self):
+        for particle in self.charges:
+            particle = calc.acceleration(particle, self.charges)
+            particle = calc.update_particle(particle, self.image_array, self.inside)
         self.update_image()
         print('drew frame')
 
@@ -187,12 +221,15 @@ class App(ctk.CTk):
         while self.looping:
             self.draw()
             time.sleep(1 / self.FPS)
+            while self.FPS == 0:
+                continue
 
     def scatter_charges(self):
+        print("neg = ", self.num_of_neg)
+        print("pos =", self.num_of_pos)
         # positive
         for i in range(self.num_of_pos):
             point: Point = random.choice(self.inside)
-            self.inside.remove(point)
             charge = Charge(point.x, point.y, self.charge)
             self.positive.append(charge)
             self.ax.scatter(charge.x, charge.y, c=charge.get_color())
@@ -200,14 +237,17 @@ class App(ctk.CTk):
         # negative
         for i in range(self.num_of_neg):
             point: Point = random.choice(self.inside)
-            self.inside.remove(point)
             charge = Charge(point.x, point.y, -self.charge)
             self.negative.append(charge)
             self.ax.scatter(charge.x, charge.y, c=charge.get_color())
 
         # all charges
-        self.charges = self.positive.extend(self.negative)
+        self.charges = self.positive + self.negative
+        # print(self.image)
+        self.ax.imshow(self.image)
+        self.canvas.draw()
         # print(f'Positives: {self.positive}', '\n', f'Negatives: {self.negative}')
+        # print(self.charges)
 
 
 def main():
