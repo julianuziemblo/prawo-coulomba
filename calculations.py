@@ -22,13 +22,6 @@ def total_force(particle: Charge, particles: list[Charge]) -> Force:
 
 def acceleration(particle: Charge, particles: list[Charge]) -> Charge:
     F = total_force(particle, particles)
-    # if not Fo:
-    #     Fc = Force(-F.x, -F.y)
-    #     print("FALSE")
-    # else:
-    #     Fc = F + (Fo * F)
-    #     print("TRUE")
-    # print("Siła:", Fc)
     particle.ax = Constants.podzialka * F.x / particle.m
     particle.ay = Constants.podzialka * F.y / particle.m
     return particle
