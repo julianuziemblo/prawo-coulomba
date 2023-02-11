@@ -1,5 +1,7 @@
 import random
 import time
+from copy import copy
+
 import numpy as np
 import matplotlib.pyplot as plt
 from point import Point
@@ -13,7 +15,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from threading import Thread
 import calculations as calc
 from tkinter import messagebox
-from image_parser import prevent_leak
 
 
 class App(ctk.CTk):
@@ -69,7 +70,7 @@ class App(ctk.CTk):
         self.inside = []
 
         # drawing
-        self.FPS = 5
+        self.FPS = 30
 
         self.mainloop()
 
@@ -83,12 +84,29 @@ class App(ctk.CTk):
         canvas.pack(padx=10, anchor=tk.S)
         self.frames['canvas'] = canvas
 
-    def create_buttons(self):
+    def create_play_button(self):
         # play
         play = ctk.CTkButton(master=self.frames['buttons'], text='Play', font=self.font_desc, fg_color='green',
                              command=self.play_action)
         play.place(relx=0.1, rely=0.5, anchor=tk.CENTER)
         self.buttons['play'] = play
+
+    def create_restart_and_pause(self):
+        # restart
+        restart = ctk.CTkButton(master=self.frames['buttons'], text='R', font=self.font_desc, fg_color='green',
+                                command=self.restart_action)
+        restart.place(relx=0.15, rely=0.5, anchor=tk.CENTER)
+        self.buttons['restart'] = restart
+
+        # pause
+        pause = ctk.CTkButton(master=self.frames['buttons'], text='P', font=self.font_desc, fg_color='green',
+                              command=self.pause_action)
+        pause.place(relx=0.05, rely=0.5, anchor=tk.CENTER)
+        self.buttons['pause'] = pause
+
+    def create_buttons(self):
+        # play
+        self.create_play_button()
 
         # upload
         upload = ctk.CTkButton(master=self.frames['buttons'], text='Upload', font=self.font_desc,
@@ -129,12 +147,12 @@ class App(ctk.CTk):
         speed_label.place(relx=0.7, rely=0.2, anchor=tk.CENTER)
 
         # speed
-        speed = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=12, command=self.slider_speed)
+        speed = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=60, command=self.slider_speed)
         speed.place(relx=0.7, rely=0.5, anchor=tk.CENTER)
         self.buttons['speed'] = speed
 
         # speed display
-        speed_display = ctk.CTkLabel(master=self.frames['buttons'], text='6.00', font=self.font_little)
+        speed_display = ctk.CTkLabel(master=self.frames['buttons'], text='30.00', font=self.font_little)
         speed_display.place(relx=0.7, rely=0.83, anchor=tk.CENTER)
         self.buttons['speed_display'] = speed_display
 
@@ -148,7 +166,28 @@ class App(ctk.CTk):
             play = Thread(target=self.loop)
             self.looping = True
             play.start()
-            self.buttons['play'].configure(text='Restart')
+            # self.buttons['play'].configure(text='Restart')
+            self.buttons['play'].destroy()
+            self.buttons.pop('play')
+            self.create_restart_and_pause()
+
+    def restart_action(self):
+        print('Restarting...')
+        self.image = None
+        self.looping = False
+        self.buttons['restart'].destroy()
+        self.buttons.pop('restart')
+        self.buttons['pause'].destroy()
+        self.buttons.pop('pause')
+        self.create_play_button()
+        self.ax.clear()
+
+    def pause_action(self):
+        if self.FPS != 0:
+            self.FPS = 0
+        else:
+            self.FPS = 30
+            self.buttons['speed_display'].configure(text='30.00')
 
     def upload_action(self):
         self.looping = False
@@ -183,15 +222,15 @@ class App(ctk.CTk):
         # self.ax = self.figure.add_subplot(111)
         # chart_type = FigureCanvasTkAgg(self.figure, self.frames['canvas'])
         # chart_type.get_tk_widget().pack()
-        print(self.charges)
+        # print(self.charges)
         if not self.charges:
             self.ax.imshow(self.image)
             self.scatter_charges()
-            print("setting up")
+            # print("setting up")
         else:
             self.ax.imshow(self.image)
             self.scatter_update()
-            print("updating")
+            # print("updating")
 
     def createWidgets(self):
         self.fig = plt.figure()
@@ -199,7 +238,7 @@ class App(ctk.CTk):
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frames['canvas'])
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()
-        print("canvas = ", self.canvas)
+        # print("canvas = ", self.canvas)
 
     def scatter_update(self):
         self.ax.clear()
@@ -212,21 +251,28 @@ class App(ctk.CTk):
 
     def draw(self):
         for particle in self.charges:
+            # 1. update acceleration
             particle = calc.acceleration(particle, self.charges)
+            # 2. update other parameters
             particle = calc.update_particle(particle, self.image_array, self.inside)
+            # 3. check if in bounds. if not, set velocity to negative and calculate again
+            particle.last_inside = Point(copy(particle.x), copy(particle.y))
+
         self.update_image()
-        print('drew frame')
+        # print('drew frame')
 
     def loop(self):
         while self.looping:
-            self.draw()
-            time.sleep(1 / self.FPS)
             while self.FPS == 0:
-                continue
+                print('paused')
+            self.draw()
+            while self.FPS == 0:
+                print('paused')
+            time.sleep(1 / self.FPS)
 
     def scatter_charges(self):
-        print("neg = ", self.num_of_neg)
-        print("pos =", self.num_of_pos)
+        # print("neg = ", self.num_of_neg)
+        # print("pos =", self.num_of_pos)
         # positive
         for i in range(self.num_of_pos):
             point: Point = random.choice(self.inside)

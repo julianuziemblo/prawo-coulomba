@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import random
+
 import numpy as np
 from image_parser import prevent_leak, get_closest_inside
 from point import Charge, Constants, Point
@@ -20,6 +23,10 @@ class Force:
 
     def __add__(self, other):
         return Force(self.x + other.x, self.y + other.y)
+
+
+class Velocity:
+    pass
 
 
 def total_force(particle: Charge, particles: list[Charge]) -> Force:
@@ -50,13 +57,22 @@ def acceleration(particle: Charge, particles: list[Charge]) -> Charge:
 
 
 def update_particle(particle: Charge, image: np.ndarray, inside: list[Point]) -> Charge:
-    particle = prevent_leak(particle, image)
     particle.x += Constants.podzialka * particle.vx
     particle.y += Constants.podzialka * particle.vy
+    if (particle.x < 0 or particle.x >= image.shape[1]) or (particle.y < 0 or particle.y >= image.shape[0]):
+        point = random.choice(inside)
+        particle.x = point.x
+        particle.y = point.y
+        particle.vx = 0
+        particle.vy = 0
+        # del particle
+        # return
+    particle = prevent_leak(particle, image)
     if Point(int(particle.x), int(particle.y)) not in inside:
         print("NIE W ŚRODKU:", particle)
     particle.vx += Constants.podzialka * particle.ax
     particle.vy += Constants.podzialka * particle.ay
+
     return particle
 
 

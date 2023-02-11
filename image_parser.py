@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import random
+
 import numpy as np
 from point import Point, Charge
 
@@ -12,46 +15,14 @@ def get_inside(image: np.ndarray):
     return inside
 
 
-def get_closest_inside(particle: Charge, image: np.ndarray) -> Charge:
-    # if particle.x > image.shape[0] // 2:
-    #     x1 = np.ceil(particle.x)
-    # else:
-    #     x1 = np.floor(particle.x)
-    # if particle.y > image.shape[1] // 2:
-    #     y1 = np.ceil(particle.y)
-    # else:
-    #     y1 = np.floor(particle.y)
-    # x = int(x1)
-    # y = int(y1)
-    # vx = -0.5*np.sign(particle.vx)
-    # vy = -0.5*np.sign(particle.vy)
-    #
-    # curr_point = Point(x, y)
-    # while image[int(curr_point.y), int(curr_point.x)]:
-    #     if int(np.floor(curr_point.x + vx)) < 0 or int(np.ceil(curr_point.x + vx)) >= image.shape[0]:
-    #         vx = -vx
-    #     if int(np.floor(curr_point.y + vy)) < 0 or int(np.ceil(curr_point.y + vy)) >= image.shape[1]:
-    #         vy = -vy
-    #     curr_point.x += vx
-    #     curr_point.y += vy
-    #     print(curr_point, vx, vy)
-    # particle.x = curr_point.x
-    # particle.y = curr_point.y
-
-    if particle.x > image.shape[0] // 2:
-        x1 = np.ceil(particle.x)
-    else:
-        x1 = np.floor(particle.x)
-    if particle.y > image.shape[1] // 2:
-        y1 = np.ceil(particle.y)
-    else:
-        y1 = np.floor(particle.y)
-    x = int(x1)
-    y = int(y1)
-    min_point = cast_rays(x, y, image)
-    particle.x = min_point.x
-    particle.y = min_point.y
+def get_closest_inside(particle: Charge) -> Charge:
+    particle.x = particle.last_inside.x
+    particle.y = particle.last_inside.y
     return particle
+
+
+def add_backwards_velocity(particle: Charge, image: np.ndarray) -> Charge:
+    pass
 
 
 def prevent_leak(particle: Charge, image: np.ndarray) -> Charge:
@@ -65,9 +36,10 @@ def prevent_leak(particle: Charge, image: np.ndarray) -> Charge:
         y1 = np.floor(particle.y)
     x = int(x1)
     y = int(y1)
-    if image[y - 1][x] or image[y + 1][x] or image[y][x - 1] or image[y][x + 1]:
+    if image[y - 1][x] or image[y + 1][x] or image[y][x - 1] or image[y][x + 1] or image[y][x]:
         print("PREVENTING")
-        particle = get_closest_inside(particle, image)
+        particle = get_closest_inside(particle)
+
     return particle
 
 
@@ -77,57 +49,57 @@ def main():
                       [False, True, True]])
     print(image)
     print(prevent_leak(Charge(1, 1, 1), image))
-    print(get_closest_inside(Charge(2, 2, 1), image))
+    print(get_closest_inside(Charge(2, 2, 1)))
 
 
 if __name__ == '__main__':
     main()
 
 
-def cast_rays(x: int, y: int, image: np.ndarray):
-    points = []
-
-    # Top
-    last_color = True
-    for i in range(y, 0):
-        if last_color and not image[i][x]:
-            points.append(Point(x, i))
-            break
-        last_color = image[i][x]
-
-    # Right
-    last_color = True
-    for i in range(x, image.shape[0]):
-        if last_color and not image[y][i]:
-            points.append(Point(i, y))
-            break
-        last_color = image[y][i]
-
-    # Bottom
-    last_color = True
-    for i in range(y, image.shape[0]):
-        if last_color and not image[i][x]:
-            points.append(Point(x, i))
-            break
-        last_color = image[i][x]
-
-    # Left
-    last_color = True
-    for i in range(x, 0):
-        if last_color and not image[y][i]:
-            points.append(Point(i, y))
-            break
-        last_color = image[y][i]
-
-    min_dist = float('inf')
-    min_point = Point(0, 0)
-    for point in points:
-        dist = point.distance(x, y)
-        if dist < min_dist:
-            min_dist = dist
-            min_point = Point(x, y)
-
-    return min_point
+# def cast_rays(x: int, y: int, image: np.ndarray):
+#     points = []
+#
+#     # Top
+#     last_color = True
+#     for i in range(y, 0):
+#         if last_color and not image[i][x]:
+#             points.append(Point(x, i))
+#             break
+#         last_color = image[i][x]
+#
+#     # Right
+#     last_color = True
+#     for i in range(x, image.shape[0]):
+#         if last_color and not image[y][i]:
+#             points.append(Point(i, y))
+#             break
+#         last_color = image[y][i]
+#
+#     # Bottom
+#     last_color = True
+#     for i in range(y, image.shape[0]):
+#         if last_color and not image[i][x]:
+#             points.append(Point(x, i))
+#             break
+#         last_color = image[i][x]
+#
+#     # Left
+#     last_color = True
+#     for i in range(x, 0):
+#         if last_color and not image[y][i]:
+#             points.append(Point(i, y))
+#             break
+#         last_color = image[y][i]
+#
+#     min_dist = float('inf')
+#     min_point = Point(0, 0)
+#     for point in points:
+#         dist = point.distance(x, y)
+#         if dist < min_dist:
+#             min_dist = dist
+#             min_point = Point(x, y)
+#
+#     return min_point
 #
 #
 # def is_inside(x: int, y: int, image: np.ndarray) -> bool:

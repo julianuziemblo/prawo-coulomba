@@ -6,7 +6,7 @@ class Constants:
     e0 = (8.9875 * 10 ** 9)
     et = 250
     k = 1 / (4 * np.pi * e0 * et)
-    podzialka = 0.25
+    podzialka = 0.3
 
 
 class Point:
@@ -16,7 +16,10 @@ class Point:
         self.color = color
 
     def distance(self, other_x: float, other_y: float) -> float:
-        return np.sqrt((other_x - self.x) ** 2 + (other_y - self.y) ** 2)
+        dist = np.sqrt((other_x - self.x) ** 2 + (other_y - self.y) ** 2)
+        if dist <= abs(0.00001):
+            del self
+        return dist
 
     def __str__(self):
         return f'P(x={self.x}, y={self.y})'
@@ -34,6 +37,7 @@ class Charge(Point):
         self.ax: float = 0.0
         self.ay: float = 0.0
         self.m = 9.1093837 * 10 ** (-17)
+        self.last_inside = Point(x, y)
 
     def get_color(self) -> str:
         return 'b' if self.q < 0 else 'r'
