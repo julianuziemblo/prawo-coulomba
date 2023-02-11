@@ -3,30 +3,8 @@ from __future__ import annotations
 import random
 
 import numpy as np
-from image_parser import prevent_leak, get_closest_inside
-from point import Charge, Constants, Point
-
-
-class Force:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __abs__(self):
-        return np.sqrt(self.x**2 + self.y**2)
-
-    def __str__(self):
-        return f'F(Fx={self.x}, Fy={self.y})'
-
-    def __mul__(self, other):
-        return Force(self.x * other.x, self.y * other.y)
-
-    def __add__(self, other):
-        return Force(self.x + other.x, self.y + other.y)
-
-
-class Velocity:
-    pass
+from image_parser import prevent_leak
+from point import Charge, Constants, Point, Force
 
 
 def total_force(particle: Charge, particles: list[Charge]) -> Force:

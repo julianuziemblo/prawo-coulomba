@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from point import Point
 from point import Charge
 from PIL import Image
-from image_parser import get_inside
+from image_parser import get_inside, get_edges
 import tkinter as tk
 import customtkinter as ctk
 from tkinter import filedialog
@@ -199,11 +199,15 @@ class App(ctk.CTk):
         image_path = filedialog.askopenfilename(title='Wybierz obraz przewodnika',
                                                 initialdir=r'C:\Users\Julian\Desktop',
                                                 filetypes=filetypes)
-        self.image = Image.open(image_path)
-        self.image_array = np.asarray(self.image)
-        self.inside = get_inside(self.image_array)
-        print("INSIDE:", self.inside)
-        self.update_image()
+        if image_path != '' and image_path is not None:
+            self.image = Image.open(image_path)
+            self.image_array = np.asarray(self.image)
+            self.inside = get_inside(self.image_array)
+            self.edge = get_edges(self.image_array)
+            print("INSIDE:", self.inside)
+            self.update_image()
+        else:
+            print('File not chosen!')
 
     def slider_speed(self, value):
         self.FPS = value

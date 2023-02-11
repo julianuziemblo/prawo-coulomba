@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import random
-
 import numpy as np
-from point import Point, Charge
+
+from point import Point, Charge, Velocity, Edge
 
 
 def get_inside(image: np.ndarray):
@@ -23,6 +22,80 @@ def get_closest_inside(particle: Charge) -> Charge:
 
 def add_backwards_velocity(particle: Charge, image: np.ndarray) -> Charge:
     pass
+
+
+def get_neighbours(x: int, y: int, image: np.ndarray):
+    """
+    Zwraca sąsiadów w kolejności:
+    lewy górny - górny- prawy górny
+    lewy - prawy
+    lewy dolny - dolny - prawy dolny
+    :param x:
+    :param y:
+    :param image:
+    :return:
+    """
+    neighbours = []
+    if image[y][x]:
+        return [False for _ in range(9)]
+    print(f"point ({x}, {y}):")
+    for j in range(y - 1, y + 2):
+        for i in range(x - 1, x + 2):
+            if not (i < 0 or i >= image.shape[1]) and not (j < 0 or j >= image.shape[0]) and \
+                    image[j][i] and not (i == x and j == y):
+                print(f"Found white at ({i}, {j})")
+                neighbours.append(True)
+            else:
+                neighbours.append(False)
+    for n in neighbours:
+        print(n, end=", ")
+    print()
+    return neighbours
+
+
+def get_edges(image: np.ndarray):
+    edges = []
+    for i, row in enumerate(image):
+        for j, cell in enumerate(row):
+            neighbours = get_neighbours(j, i, image)
+            p = Point(j, i)
+            v = Velocity(0, 0)
+            # top left
+            if neighbours[0]:
+                v.x += 1
+                v.y += 1
+            # top
+            if neighbours[1]:
+                v.y += 1
+            # top right
+            if neighbours[2]:
+                v.x -= 1
+                v.y += 1
+            # left
+            if neighbours[3]:
+                v.x += 1
+            # right
+            if neighbours[5]:
+                v.x -= 1
+            # bottom left
+            if neighbours[6]:
+                v.x += 1
+                v.y -= 1
+            # bottom
+            if neighbours[7]:
+                v.y -= 1
+            # bottom right
+            if neighbours[8]:
+                v.x -= 1
+                v.y -= 1
+
+            if v.x != 0:
+                v.x /= abs(v.x)
+            if v.y != 0:
+                v.y /= abs(v.y)
+            if not (v.x == 0 and v.y == 0) and not image[i][j]:
+                edges.append(Edge(p=p, v=v))
+    return edges
 
 
 def prevent_leak(particle: Charge, image: np.ndarray) -> Charge:
@@ -47,14 +120,13 @@ def main():
     image = np.array([[False, False, False],
                       [False, False, True],
                       [False, True, True]])
-    print(image)
-    print(prevent_leak(Charge(1, 1, 1), image))
-    print(get_closest_inside(Charge(2, 2, 1)))
+    # print(image.shape)
+    for edge in get_edges(image):
+        print(edge)
 
 
 if __name__ == '__main__':
     main()
-
 
 # def cast_rays(x: int, y: int, image: np.ndarray):
 #     points = []

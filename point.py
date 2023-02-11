@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import numpy as np
 
 
@@ -21,6 +22,16 @@ class Point:
             del self
         return dist
 
+    def _angle(self, other):
+        return np.arctan2((self.y - other.y), (self.x - other.x))
+
+    def _scalar(self, other):
+        return self.x * other.x + self.y + other.y
+
+    def project(self, other):
+        scaling = (self._scalar(other) / (abs(other) ** 2))
+        return self.__init__(scaling * other.x, scaling * other.y)
+
     def __str__(self):
         return f'P(x={self.x}, y={self.y})'
 
@@ -29,7 +40,7 @@ class Point:
 
 
 class Charge(Point):
-    def __init__(self, x: float, y: float, q: float):
+    def __init__(self, x: float, y: float, q: float = 0):
         super().__init__(x, y)
         self.q: float = q
         self.vx: float = 0.0
@@ -45,9 +56,6 @@ class Charge(Point):
     def _force(self, other):
         return Constants.k * abs(self.q * other.q) / (self.distance(other.x, other.y) ** 2)
 
-    def _angle(self, other):
-        return np.arctan2((self.y - other.y), (self.x - other.x))
-
     def forceX(self, other):
         return np.cos(self._angle(other)) * self._force(other)
 
@@ -59,3 +67,42 @@ class Charge(Point):
 
     def __hash__(self):
         return hash((self.x, self.y, self.q, self.vx, self.vy, self.ax, self.ay))
+
+
+class Force:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __abs__(self):
+        return np.sqrt(self.x**2 + self.y**2)
+
+    def __str__(self):
+        return f'F(Fx={self.x}, Fy={self.y})'
+
+    def __mul__(self, other):
+        return Force(self.x * other.x, self.y * other.y)
+
+    def __add__(self, other):
+        return Force(self.x + other.x, self.y + other.y)
+
+
+class Velocity:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __abs__(self):
+        return np.sqrt(self.x**2 + self.y**2)
+
+    def __str__(self):
+        return f'V(Vx={self.x}, Vy={self.y})'
+
+
+class Edge:
+    def __init__(self, p: Point, v: Velocity):
+        self.p = p
+        self.v = v
+
+    def __str__(self):
+        return f'Edge in point {self.p}, vector {self.v}'
