@@ -1,3 +1,4 @@
+import os
 import random
 import time
 import tkinter as tk
@@ -14,7 +15,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import calculations as calc
 from image_parser import get_inside, get_edges
-from point import Charge
+from point import Charge, Constants
 from point import Point
 
 
@@ -70,6 +71,8 @@ class App(ctk.CTk):
         self.charge = 1.0
         self.inside = []
         self.scaling = 1.0
+        self.average_velocity = 0.0
+        self.grid_toggled= False
 
         # drawing
         self.FPS = 30
@@ -89,7 +92,7 @@ class App(ctk.CTk):
 
         # main canvas frame
         canvas = ctk.CTkFrame(master=self, width=self.width - 20, height=self.height - 80)
-        canvas.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        canvas.place(relx=0.6, rely=0.525, anchor=tk.CENTER)
         self.frames['canvas'] = canvas
 
     def create_play_button(self):
@@ -102,13 +105,13 @@ class App(ctk.CTk):
     def create_restart_and_pause(self):
         # restart
         restart = ctk.CTkButton(master=self.frames['buttons'], text='R', font=self.font_desc, fg_color='green',
-                                command=self.restart_action)
+                                command=self.restart_action, width=20, height=20)
         restart.place(relx=0.15, rely=0.5, anchor=tk.CENTER)
         self.buttons['restart'] = restart
 
         # pause
         pause = ctk.CTkButton(master=self.frames['buttons'], text='P', font=self.font_desc, fg_color='green',
-                              command=self.pause_action)
+                              command=self.pause_action, width=20, height=20)
         pause.place(relx=0.05, rely=0.5, anchor=tk.CENTER)
         self.buttons['pause'] = pause
 
@@ -177,11 +180,11 @@ class App(ctk.CTk):
         charge = ctk.CTkSlider(master=side_bar, from_=0.0, to=5.0, command=self.slider_charge,
                                width=self.width // 6 - 50)
         charge.set(1.0)
-        charge.place(relx=0.4, rely=0.13, anchor=tk.CENTER)
+        charge.place(relx=0.4, rely=0.1, anchor=tk.CENTER)
         self.buttons['charge'] = charge
         # charge display
         charge_display = ctk.CTkLabel(master=side_bar, text='1.00')
-        charge_display.place(relx=0.87, rely=0.13, anchor=tk.CENTER)
+        charge_display.place(relx=0.87, rely=0.1, anchor=tk.CENTER)
         self.buttons['charge_display'] = charge_display
 
         # scaling
@@ -198,12 +201,75 @@ class App(ctk.CTk):
         scaling_display.place(relx=0.87, rely=0.26, anchor=tk.CENTER)
         self.buttons['scaling_display'] = scaling_display
 
-        # TODO: MAX VELOCITY SLIDER
+        # max velocity
+        max_velocity_label = ctk.CTkLabel(master=side_bar, text='Max. velocity', font=self.font_little)
+        max_velocity_label.place(relx=0.485, rely=0.4, anchor=tk.CENTER)
+        # charge
+        max_velocity = ctk.CTkSlider(master=side_bar, from_=0.0, to=50, command=self.slider_max_velocity,
+                                     width=self.width // 6 - 50)
+        max_velocity.set(15.0)
+        max_velocity.place(relx=0.4, rely=0.46, anchor=tk.CENTER)
+        self.buttons['max_velocity'] = max_velocity
+        # charge display
+        max_velocity_display = ctk.CTkLabel(master=side_bar, text='15.00')
+        max_velocity_display.place(relx=0.87, rely=0.46, anchor=tk.CENTER)
+        self.buttons['max_velocity_display'] = max_velocity_display
+
+        # toggle grid
+        toggle_grid = ctk.CTkButton(master=side_bar, command=self.button_grid, text='Grid: off', font=self.font_little,
+                                    fg_color='gray', width=self.width // 6 - 50)
+        toggle_grid.place(relx=0.5, rely=0.56, anchor=tk.CENTER)
+        self.buttons['toggle_grid'] = toggle_grid
+
+        # save image
+        save_fig = ctk.CTkButton(master=side_bar, command=self.button_save, text='Save', font=self.font_little,
+                                 fg_color='blue', width=self.width // 6 - 50)
+        save_fig.place(relx=0.5, rely=0.66, anchor=tk.CENTER)
+        self.buttons['save_fig'] = save_fig
+
+        # save image
+        reset_velocities = ctk.CTkButton(master=side_bar, command=self.reset_velocities,
+                                         text='Reset\nforces and\nvelocities', font=self.font_little,
+                                         width=self.width // 6 - 50)
+        reset_velocities.place(relx=0.5, rely=0.72, anchor=tk.N)
+        self.buttons['reset_velocities'] = reset_velocities
+
+    def reset_velocities(self):
+        for p in self.charges:
+            p.vx = 0
+            p.vy = 0
 
     def slider_charge(self, value):
         self.charge = float(value)
         # print(self.charge)
         self.buttons['charge_display'].configure(text=str(round(value, 2)))
+
+    def button_save(self):
+        if self.image:
+            figname = f'figure{random.randint(2137, 69420)}.png'
+            folder = filedialog.askdirectory(initialdir=r'C:\Users\julia\OneDrive\Pulpit')
+            path = os.path.join(folder, figname)
+            self.fig.savefig(path)
+            messagebox.showinfo('Success', 'Image saved')
+        else:
+            messagebox.showerror('Error', 'Cannot save no figure!')
+
+    def button_grid(self):
+        if not self.grid_toggled:
+            self.buttons['toggle_grid'].configure(text='Grid: on')
+            self.buttons['toggle_grid'].configure(fg_color='green')
+            self.ax.grid(linestyle='--')
+            self.grid_toggled = True
+        else:
+            self.buttons['toggle_grid'].configure(text='Grid: off')
+            self.buttons['toggle_grid'].configure(fg_color='gray')
+            self.ax.grid(b=None)
+            self.grid_toggled = False
+
+    def slider_max_velocity(self, value):
+        Constants.max_velocity = float(value)
+        # print(self.charge)
+        self.buttons['max_velocity_display'].configure(text=str(round(value, 2)))
 
     def slider_scaling(self, value):
         self.scaling = float(value)
@@ -231,7 +297,11 @@ class App(ctk.CTk):
         self.buttons['pause'].destroy()
         self.buttons.pop('pause')
         self.create_play_button()
+        self.positive = []
+        self.negative = []
+        self.inside = []
         self.ax.clear()
+        self.FPS = float(self.buttons['speed'].cget('value'))
         self.canvas.draw()
 
     def pause_action(self):
@@ -243,7 +313,6 @@ class App(ctk.CTk):
 
     def upload_action(self):
         self.looping = False
-        time.sleep(1 / self.FPS)
         # print("Uploading...")
         filetypes = (
             ('Bitmaps', '*.bmp'),
@@ -282,6 +351,7 @@ class App(ctk.CTk):
         if not self.charges:
             self.ax.imshow(self.image)
             self.scatter_charges()
+
             # print("setting up")
         else:
             self.ax.imshow(self.image)
@@ -290,7 +360,7 @@ class App(ctk.CTk):
             # print("updating")
 
     def createWidgets(self):
-        self.fig = plt.figure()
+        self.fig = plt.figure(figsize=(14, 9), dpi=80)
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frames['canvas'])
         self.canvas.get_tk_widget().pack()
@@ -305,6 +375,9 @@ class App(ctk.CTk):
                             c=particle.get_color())
             self.draw_trace(particle)
         self.ax.imshow(self.image)
+        if self.grid_toggled:
+            print('grid toggled')
+            self.ax.grid(linestyle='--')
         self.canvas.draw()
 
     def draw_trace(self, particle: Charge):
@@ -312,7 +385,7 @@ class App(ctk.CTk):
                      [particle.y, particle.last_inside.y - (particle.vy * self.scaling)],
                      c=particle.get_color(),
                      linestyle='--')
-        print(particle.vx, particle.vy)
+        # print(particle.vx, particle.vy)
 
     def draw(self):
         for particle in self.charges:

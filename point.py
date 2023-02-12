@@ -73,10 +73,10 @@ class Charge(Point):
     def update_position(self):
         self.x += Constants.podzialka * self.vx
         self.y += Constants.podzialka * self.vy
-        if self.x == self.last_inside.x and \
-                self.y == self.last_inside.y:
-            self.vx = 0
-            self.vy = 0
+        # if self.x == self.last_inside.x and \
+        #         self.y == self.last_inside.y:
+        #     self.vx = 0
+        #     self.vy = 0
 
     def update_velocity(self):
         self.vx += Constants.podzialka * self.ax
