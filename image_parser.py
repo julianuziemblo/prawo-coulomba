@@ -38,18 +38,18 @@ def get_neighbours(x: int, y: int, image: np.ndarray):
     neighbours = []
     if image[y][x]:
         return [False for _ in range(9)]
-    print(f"point ({x}, {y}):")
+    # print(f"point ({x}, {y}):")
     for j in range(y - 1, y + 2):
         for i in range(x - 1, x + 2):
             if not (i < 0 or i >= image.shape[1]) and not (j < 0 or j >= image.shape[0]) and \
                     image[j][i] and not (i == x and j == y):
-                print(f"Found white at ({i}, {j})")
+                # print(f"Found white at ({i}, {j})")
                 neighbours.append(True)
             else:
                 neighbours.append(False)
-    for n in neighbours:
-        print(n, end=", ")
-    print()
+    # for n in neighbours:
+    #     print(n, end=", ")
+    # print()
     return neighbours
 
 
@@ -109,8 +109,10 @@ def prevent_leak(particle: Charge, image: np.ndarray) -> Charge:
         y1 = np.floor(particle.y)
     x = int(x1)
     y = int(y1)
+    if y-1 < 0 or y+1 >= image.shape[0] or x-1 < 0 or x+1 >= image.shape[1]:
+        return get_closest_inside(particle)
     if image[y - 1][x] or image[y + 1][x] or image[y][x - 1] or image[y][x + 1] or image[y][x]:
-        print("PREVENTING")
+        # print("PREVENTING")
         particle = get_closest_inside(particle)
 
     return particle

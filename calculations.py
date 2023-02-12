@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 import random
-
 import numpy as np
 from image_parser import prevent_leak
 from point import Charge, Constants, Point, Force
@@ -28,8 +26,11 @@ def acceleration(particle: Charge, particles: list[Charge]) -> Charge:
 
 
 def update_particle(particle: Charge, image: np.ndarray, inside: list[Point]) -> Charge:
-    particle.x += Constants.podzialka * particle.vx
-    particle.y += Constants.podzialka * particle.vy
+    if (particle.x < 0 or particle.x >= image.shape[1]) or (particle.y < 0 or particle.y >= image.shape[0]):
+        particle.x = particle.last_inside.x
+        particle.y = particle.last_inside.y
+        particle.vx -= 0.1*particle.vx
+        particle.vy -= 0.1*particle.vy
     if (particle.x < 0 or particle.x >= image.shape[1]) or (particle.y < 0 or particle.y >= image.shape[0]):
         point = random.choice(inside)
         particle.x = point.x
@@ -39,10 +40,8 @@ def update_particle(particle: Charge, image: np.ndarray, inside: list[Point]) ->
         # del particle
         # return
     particle = prevent_leak(particle, image)
-    if Point(int(particle.x), int(particle.y)) not in inside:
-        print("NIE W ŚRODKU:", particle)
-    particle.vx += Constants.podzialka * particle.ax
-    particle.vy += Constants.podzialka * particle.ay
+    # if Point(int(particle.x), int(particle.y)) not in inside:
+    #   print("NIE W ŚRODKU:", particle)
 
     return particle
 
@@ -52,7 +51,7 @@ def main():
     c1 = Charge(0, 0, 1)
     c2 = Charge(1, 0, 1)
     c3 = Charge(0, 1, -1)
-    print(total_force(c1, [c1, c2, c3]))
+    # print(total_force(c1, [c1, c2, c3]))
 
 
 if __name__ == '__main__':

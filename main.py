@@ -1,20 +1,21 @@
 import random
 import time
-from copy import copy
-
-import numpy as np
-import matplotlib.pyplot as plt
-from point import Point
-from point import Charge
-from PIL import Image
-from image_parser import get_inside, get_edges
 import tkinter as tk
-import customtkinter as ctk
-from tkinter import filedialog
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from copy import copy
 from threading import Thread
-import calculations as calc
+from tkinter import filedialog
 from tkinter import messagebox
+
+import customtkinter as ctk
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import calculations as calc
+from image_parser import get_inside, get_edges
+from point import Charge
+from point import Point
 
 
 class App(ctk.CTk):
@@ -61,13 +62,14 @@ class App(ctk.CTk):
         self.create_buttons()
 
         # canvas
-        self.num_of_pos = 50
-        self.num_of_neg = 50
+        self.num_of_pos = 15
+        self.num_of_neg = 15
         self.positive = []
         self.negative = []
         self.charges = []
-        self.charge = 1.
+        self.charge = 1.0
         self.inside = []
+        self.scaling = 1.0
 
         # drawing
         self.FPS = 30
@@ -77,11 +79,17 @@ class App(ctk.CTk):
     def create_frames(self):
         # top frame
         buttons = ctk.CTkFrame(master=self, width=self.width - 20, height=self.height // 8)
-        buttons.pack(padx=10, pady=10, anchor=tk.N)
+        buttons.place(relx=0.5, rely=0.01, anchor=tk.N)
         self.frames['buttons'] = buttons
+
+        # side bar
+        side_bar = ctk.CTkFrame(master=self, width=self.width // 6, height=self.height - (self.height // 8 - 5))
+        side_bar.place(relx=0.1, rely=0.6, anchor=tk.CENTER)
+        self.frames['side_bar'] = side_bar
+
         # main canvas frame
         canvas = ctk.CTkFrame(master=self, width=self.width - 20, height=self.height - 80)
-        canvas.pack(padx=10, anchor=tk.S)
+        canvas.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
         self.frames['canvas'] = canvas
 
     def create_play_button(self):
@@ -119,12 +127,12 @@ class App(ctk.CTk):
         number_label.place(relx=0.3, rely=0.2, anchor=tk.CENTER)
 
         # number of charges
-        num_of_charges = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=100, command=self.slider_pos)
+        num_of_charges = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=30, command=self.slider_pos)
         num_of_charges.place(relx=0.3, rely=0.5, anchor=tk.CENTER)
         self.buttons['num_of_charges'] = num_of_charges
 
         # number display
-        num_display = ctk.CTkLabel(master=self.frames['buttons'], text=str(50), font=self.font_little)
+        num_display = ctk.CTkLabel(master=self.frames['buttons'], text=str(15), font=self.font_little)
         num_display.place(relx=0.3, rely=0.83, anchor=tk.CENTER)
         self.buttons['num_display'] = num_display
 
@@ -133,14 +141,14 @@ class App(ctk.CTk):
         num_label.place(relx=0.5, rely=0.2, anchor=tk.CENTER)
 
         # number of charges neg
-        num_of_neg = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=100, command=self.slider_neg)
+        num_of_neg = ctk.CTkSlider(master=self.frames['buttons'], from_=0, to=30, command=self.slider_neg)
         num_of_neg.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
         self.buttons['num_of_neg'] = num_of_neg
 
         # number display neg
-        num_display = ctk.CTkLabel(master=self.frames['buttons'], text=str(50), font=self.font_little)
-        num_display.place(relx=0.5, rely=0.83, anchor=tk.CENTER)
-        self.buttons['neg_display'] = num_display
+        neg_display = ctk.CTkLabel(master=self.frames['buttons'], text=str(15), font=self.font_little)
+        neg_display.place(relx=0.5, rely=0.83, anchor=tk.CENTER)
+        self.buttons['neg_display'] = neg_display
 
         # speed label
         speed_label = ctk.CTkLabel(master=self.frames['buttons'], text='FPS', font=self.font_input)
@@ -157,12 +165,55 @@ class App(ctk.CTk):
         self.buttons['speed_display'] = speed_display
 
         self.createWidgets()
+        self.create_sidebar_widgets()
+
+    def create_sidebar_widgets(self):
+        side_bar = self.frames['side_bar']
+
+        # charge label
+        charge_label = ctk.CTkLabel(master=side_bar, text='Charge', font=self.font_little)
+        charge_label.place(relx=0.5, rely=0.05, anchor=tk.CENTER)
+        # charge
+        charge = ctk.CTkSlider(master=side_bar, from_=0.0, to=5.0, command=self.slider_charge,
+                               width=self.width // 6 - 50)
+        charge.set(1.0)
+        charge.place(relx=0.4, rely=0.13, anchor=tk.CENTER)
+        self.buttons['charge'] = charge
+        # charge display
+        charge_display = ctk.CTkLabel(master=side_bar, text='1.00')
+        charge_display.place(relx=0.87, rely=0.13, anchor=tk.CENTER)
+        self.buttons['charge_display'] = charge_display
+
+        # scaling
+        scaling_label = ctk.CTkLabel(master=side_bar, text='Tail scaling', font=self.font_little)
+        scaling_label.place(relx=0.5, rely=0.2, anchor=tk.CENTER)
+        # charge
+        scaling = ctk.CTkSlider(master=side_bar, from_=0.0, to=5.0, command=self.slider_scaling,
+                                width=self.width // 6 - 50)
+        scaling.set(1.0)
+        scaling.place(relx=0.4, rely=0.26, anchor=tk.CENTER)
+        self.buttons['scaling'] = scaling
+        # charge display
+        scaling_display = ctk.CTkLabel(master=side_bar, text='1.00')
+        scaling_display.place(relx=0.87, rely=0.26, anchor=tk.CENTER)
+        self.buttons['scaling_display'] = scaling_display
+
+        # TODO: MAX VELOCITY SLIDER
+
+    def slider_charge(self, value):
+        self.charge = float(value)
+        # print(self.charge)
+        self.buttons['charge_display'].configure(text=str(round(value, 2)))
+
+    def slider_scaling(self, value):
+        self.scaling = float(value)
+        self.buttons['scaling_display'].configure(text=str(round(value, 2)))
 
     def play_action(self):
         if not self.image:
             messagebox.showerror('Error', 'Cannot play the simulation until an image is uploaded!')
         else:
-            print("iiiiiiin motioooooon")
+            # print("iiiiiiin motioooooon")
             play = Thread(target=self.loop)
             self.looping = True
             play.start()
@@ -172,7 +223,7 @@ class App(ctk.CTk):
             self.create_restart_and_pause()
 
     def restart_action(self):
-        print('Restarting...')
+        # print('Restarting...')
         self.image = None
         self.looping = False
         self.buttons['restart'].destroy()
@@ -181,6 +232,7 @@ class App(ctk.CTk):
         self.buttons.pop('pause')
         self.create_play_button()
         self.ax.clear()
+        self.canvas.draw()
 
     def pause_action(self):
         if self.FPS != 0:
@@ -192,7 +244,7 @@ class App(ctk.CTk):
     def upload_action(self):
         self.looping = False
         time.sleep(1 / self.FPS)
-        print("Uploading...")
+        # print("Uploading...")
         filetypes = (
             ('Bitmaps', '*.bmp'),
         )
@@ -204,7 +256,7 @@ class App(ctk.CTk):
             self.image_array = np.asarray(self.image)
             self.inside = get_inside(self.image_array)
             self.edge = get_edges(self.image_array)
-            print("INSIDE:", self.inside)
+            # print("INSIDE:", self.inside)
             self.update_image()
         else:
             print('File not chosen!')
@@ -234,6 +286,7 @@ class App(ctk.CTk):
         else:
             self.ax.imshow(self.image)
             self.scatter_update()
+
             # print("updating")
 
     def createWidgets(self):
@@ -250,17 +303,42 @@ class App(ctk.CTk):
         for particle in self.charges:
             self.ax.scatter(particle.x, particle.y, marker='o',
                             c=particle.get_color())
+            self.draw_trace(particle)
         self.ax.imshow(self.image)
         self.canvas.draw()
 
+    def draw_trace(self, particle: Charge):
+        self.ax.plot([particle.x, particle.last_inside.x - (particle.vx * self.scaling)],
+                     [particle.y, particle.last_inside.y - (particle.vy * self.scaling)],
+                     c=particle.get_color(),
+                     linestyle='--')
+        print(particle.vx, particle.vy)
+
     def draw(self):
         for particle in self.charges:
+            # for e in self.edge:
+            #     if particle.normalised_point() == e.p:
+            #         print("PARTICLE POINT:", particle.normalised_point())
+            #         print("EDGE:", e)
+            #         v = e.v.tangent()
+            #         particle = particle.project(v)
+            #         break
             # 1. update acceleration
             particle = calc.acceleration(particle, self.charges)
             # 2. update other parameters
-            particle = calc.update_particle(particle, self.image_array, self.inside)
+            particle.update_position()
             # 3. check if in bounds. if not, set velocity to negative and calculate again
-            particle.last_inside = Point(copy(particle.x), copy(particle.y))
+            for e in self.edge:
+                if particle.normalised_point() == e.p:
+                    # print("PARTICLE POINT:", particle.normalised_point())
+                    # print("EDGE:", e)
+                    v = e.v.tangent()
+                    particle = particle.project(v)
+                    break
+            particle = calc.update_particle(particle, self.image_array, self.inside)
+            particle.update_velocity()
+
+            particle.last_inside = Point(particle.x, particle.y)
 
         self.update_image()
         # print('drew frame')
@@ -268,10 +346,12 @@ class App(ctk.CTk):
     def loop(self):
         while self.looping:
             while self.FPS == 0:
-                print('paused')
+                pass
+                # print('paused')
             self.draw()
             while self.FPS == 0:
-                print('paused')
+                pass
+                # print('paused')
             time.sleep(1 / self.FPS)
 
     def scatter_charges(self):
