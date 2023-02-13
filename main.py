@@ -310,9 +310,11 @@ class App(ctk.CTk):
     def pause_action(self):
         if self.FPS != 0:
             self.FPS = 0
+            self.buttons['pause'].configure(fg_color='blue')
         else:
             self.FPS = 30
             self.buttons['speed_display'].configure(text='30.00')
+            self.buttons['pause'].configure(fg_color='green')
 
     def upload_action(self):
         self.looping = False
