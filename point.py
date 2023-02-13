@@ -82,9 +82,9 @@ class Charge(Point):
         self.vx += Constants.podzialka * self.ax
         self.vy += Constants.podzialka * self.ay
         if abs(self.vx) > Constants.max_velocity:
-            self.vx = 0
+            self.vx = Constants.max_velocity * np.sign(self.vx)
         if abs(self.vy) > Constants.max_velocity:
-            self.vy = 0
+            self.vy = Constants.max_velocity * np.sign(self.vy)
 
     def __str__(self):
         return f'Charge(x={self.x}, y={self.y}, q={self.q}, vx={self.vx}, ' \

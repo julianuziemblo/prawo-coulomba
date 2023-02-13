@@ -238,6 +238,8 @@ class App(ctk.CTk):
         for p in self.charges:
             p.vx = 0
             p.vy = 0
+            p.ax = 0
+            p.ay = 0
 
     def slider_charge(self, value):
         self.charge = float(value)
@@ -290,8 +292,8 @@ class App(ctk.CTk):
 
     def restart_action(self):
         # print('Restarting...')
-        self.image = None
         self.looping = False
+        self.image = None
         self.buttons['restart'].destroy()
         self.buttons.pop('restart')
         self.buttons['pause'].destroy()
@@ -301,7 +303,8 @@ class App(ctk.CTk):
         self.negative = []
         self.inside = []
         self.ax.clear()
-        self.FPS = float(self.buttons['speed'].cget('value'))
+        self.FPS = 30.0
+        self.buttons['speed'].set(30)
         self.canvas.draw()
 
     def pause_action(self):
@@ -418,12 +421,12 @@ class App(ctk.CTk):
 
     def loop(self):
         while self.looping:
-            while self.FPS == 0:
-                pass
+            while self.FPS == 0 and self.looping:
+                time.sleep(1)
                 # print('paused')
             self.draw()
-            while self.FPS == 0:
-                pass
+            while self.FPS == 0 and self.looping:
+                time.sleep(1)
                 # print('paused')
             time.sleep(1 / self.FPS)
 
